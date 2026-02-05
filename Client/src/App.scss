@@ -1,0 +1,502 @@
+// Global Styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: #ffffff;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+// App Container
+.app {
+  margin: auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  flex: 1;
+}
+
+// Header
+.header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+
+  &__logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &-icon {
+      font-size: 1.5rem;
+    }
+
+    &-text {
+      font-weight: 700;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    gap: 2rem;
+
+    &-link {
+      color: #6b7280;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #10b981;
+      }
+    }
+  }
+}
+
+// Hero Section
+.hero {
+  text-align: center;
+  margin-bottom: 4rem;
+
+  &__title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+
+  &__subtitle {
+    font-size: 1.125rem;
+    color: #6b7280;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+// Upload Section
+.upload-section {
+  background-color: #ffffff;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 3rem;
+  margin-bottom: 2rem;
+  transition: all 0.3s;
+
+  &--drag-over {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+  }
+
+  &--has-file {
+    border-color: #10b981;
+    border-style: solid;
+    background-color: #f0fdf4;
+  }
+
+  &__content {
+    text-align: center;
+  }
+
+  &__icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #10b981;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  &__text {
+    color: #6b7280;
+    margin-bottom: 1rem;
+  }
+
+  &__button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #ffffff;
+    border: 2px solid #10b981;
+    color: #10b981;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+
+    &:hover {
+      background-color: #f0fdf4;
+    }
+  }
+
+  &__input {
+    display: none;
+  }
+
+  &__formats {
+    color: #9ca3af;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+  }
+
+  &__file-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  &__file-name {
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  &__remove {
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    font-family: inherit;
+
+    &:hover {
+      color: #dc2626;
+    }
+  }
+}
+
+// Controls Section
+.controls-section {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+
+  &__group {
+    margin-bottom: 1.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__label {
+    display: block;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  &__fps-selector {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  &__select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #1f2937;
+    background-color: #ffffff;
+    cursor: pointer;
+    min-width: 150px;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: #10b981;
+    }
+  }
+
+  &__fps-info {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  &__extract-button {
+    width: 100%;
+    padding: 1rem 2rem;
+    background-color: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    font-family: inherit;
+
+    &:hover:not(:disabled) {
+      background-color: #059669;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      background-color: #d1d5db;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+}
+
+// Progress Section
+.progress-section {
+  margin-bottom: 2rem;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  &__status {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  &__percentage {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  &__bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  &__bar {
+    height: 100%;
+    background-color: #10b981;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  &__message {
+    margin-top: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+}
+
+// Gallery Section
+.gallery-section {
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  &__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  &__count {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  &__card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #10b981;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+  }
+
+  &__image {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    background-color: #f3f4f6;
+    display: block;
+  }
+
+  &__info {
+    padding: 0.75rem;
+  }
+
+  &__frame-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  &__timestamp {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+}
+
+// Footer
+.footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 4rem;
+  background-color: #ffffff;
+
+  &__text {
+    margin: 0;
+  }
+}
+
+// Image Modal
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+
+  &__content {
+    max-width: 90%;
+    max-height: 90%;
+    position: relative;
+  }
+
+  &__close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    color: #ffffff;
+    font-size: 2rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    line-height: 1;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  &__image {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 8px;
+    display: block;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .container {
+    padding: 2rem 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .hero {
+    margin-bottom: 3rem;
+
+    &__title {
+      font-size: 2rem;
+    }
+
+    &__subtitle {
+      font-size: 1rem;
+    }
+  }
+
+  .upload-section {
+    padding: 2rem 1rem;
+  }
+
+  .controls-section {
+    padding: 1.5rem;
+
+    &__fps-selector {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    &__select {
+      width: 100%;
+    }
+  }
+
+  .gallery-section {
+    &__grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+
+    &__header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
+  .image-modal {
+    padding: 1rem;
+
+    &__close {
+      top: -35px;
+      font-size: 1.5rem;
+    }
+  }
+}
