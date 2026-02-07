@@ -106,7 +106,6 @@ const UploadSection: React.FC<UploadSectionProps> = ({
       onDrop={handleDrop}
     >
       <div className="upload-section__content">
-        <div className="upload-section__icon">⬆️</div>
         <h3 className="upload-section__title">Drag & Drop Your Video</h3>
         <p className="upload-section__text">or click to browse</p>
         <button
@@ -461,7 +460,6 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      <Header />
       
       <div className="container">
         <Hero />
@@ -491,7 +489,6 @@ const App: React.FC = () => {
         )}
       </div>
       
-      <Footer />
       
       <ImageModal
         frame={selectedFrame}

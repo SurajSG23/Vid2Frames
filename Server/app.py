@@ -1,4 +1,4 @@
-# pip install fastapi uvicorn python-multipart opencv-python pillow
+# pip install fastapi uvicorn python-multipart opencv-python pillow / pip install -r requirements.txt
 
 # uvicorn app:app --reload
 
