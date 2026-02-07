@@ -16,22 +16,6 @@ interface ProcessingStatus {
   message: string;
 }
 
-// Header Component
-const Header: React.FC = () => {
-  return (
-    <header className="header">
-      <div className="header__logo">
-        <span className="header__logo-icon">📹</span>
-        <span className="header__logo-text">FrameExtract</span>
-      </div>
-      <nav className="header__nav">
-        <a href="#home" className="header__nav-link">Home</a>
-        <a href="#docs" className="header__nav-link">Docs</a>
-        <a href="#about" className="header__nav-link">About</a>
-      </nav>
-    </header>
-  );
-};
 
 // Hero Component
 const Hero: React.FC = () => {
@@ -271,17 +255,6 @@ const GallerySection: React.FC<GallerySectionProps> = ({ frames, onFrameClick })
         ))}
       </div>
     </div>
-  );
-};
-
-// Footer Component
-const Footer: React.FC = () => {
-  return (
-    <footer className="footer">
-      <p className="footer__text">
-        FrameExtract © 2024 | All processing happens securely on our servers
-      </p>
-    </footer>
   );
 };
 
