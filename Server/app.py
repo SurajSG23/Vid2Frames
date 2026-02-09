@@ -1,4 +1,4 @@
-# pip install fastapi uvicorn python-multipart opencv-python pillow / pip install -r requirements.txt
+# pip install fastapi uvicorn python-multipart opencv-python pillow
 
 # uvicorn app:app --reload
 
@@ -11,14 +11,12 @@ import uuid
 import cv2
 import os
 
-# -----------------------
 # App Setup
-# -----------------------
 app = FastAPI(title="Video Frame Extractor API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # restrict in production
+    allow_origins=["http://localhost:5173/"],  # restrict in production
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -32,9 +30,7 @@ FRAME_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# -----------------------
-# Utility: Frame Extractor
-# -----------------------
+# Frame Extractor
 def extract_frames(video_path: str, output_dir: str, fps: int):
     cap = cv2.VideoCapture(video_path)
 
@@ -45,7 +41,7 @@ def extract_frames(video_path: str, output_dir: str, fps: int):
     interval = int(video_fps // fps)
     interval = max(1, interval)
 
-    frame_count = 0
+    frame_count = 0 
     saved_count = 0
 
     os.makedirs(output_dir, exist_ok=True)
@@ -64,9 +60,7 @@ def extract_frames(video_path: str, output_dir: str, fps: int):
 
     cap.release()
 
-# -----------------------
 # API: Upload & Process
-# -----------------------
 @app.post("/upload")
 async def upload_video(
     file: UploadFile = File(...),
@@ -101,9 +95,7 @@ async def upload_video(
         "frames": frame_urls
     }
 
-# -----------------------
 # Health Check
-# -----------------------
 @app.get("/health")
 def health():
     return {"status": "ok"}
