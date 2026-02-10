@@ -329,7 +329,6 @@ export default router;
 6. No forced download 🎯
 
 ---
-
 ## 1️⃣ React Component (UI + logic hooks)
 
 ### `DocumentPreview.tsx`
