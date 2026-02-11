@@ -113,41 +113,82 @@ export const transporter = nodemailer.createTransport({
 ### 📁 `routes/mail.ts`
 
 ```ts
-import { Router } from "express";
-import { upload } from "../middleware/upload";
-import { transporter } from "../utils/mailer";
+import express, { Request, Response } from "express";
+import cors from "cors";
+import dotenv from "dotenv";
 
-const router = Router();
+import { upload } from "./middleware/upload";
+import { transporter } from "./utils/mailer";
 
-router.post("/send-mail", upload.single("file"), async (req, res) => {
-  try {
-    const { to, cc, subject, body } = req.body;
+dotenv.config();
 
-    const mailOptions = {
-      from: process.env.OUTLOOK_EMAIL,
-      to: to.split(","),       // multiple recipients
-      cc: cc?.split(","),
-      subject,
-      text: body,
-      attachments: req.file
-        ? [{
-            filename: req.file.originalname,
-            content: req.file.buffer,
-            contentType: req.file.mimetype
-          }]
-        : []
-    };
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-    await transporter.sendMail(mailOptions);
+/* -------------------- MIDDLEWARE -------------------- */
 
-    res.status(200).json({ message: "Mail sent successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to send mail" });
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/* -------------------- ROUTES -------------------- */
+
+app.post(
+  "/send-mail",
+  upload.single("file"),
+  async (req: Request, res: Response) => {
+    try {
+      const { to, cc, subject, body } = req.body;
+
+      if (!to || !subject) {
+        return res.status(400).json({
+          error: "Recipient and subject are required",
+        });
+      }
+
+      const mailOptions = {
+        from: process.env.OUTLOOK_EMAIL,
+        to: to.split(","), // multiple recipients
+        cc: cc ? cc.split(",") : undefined,
+        subject,
+        text: body,
+        attachments: req.file
+          ? [
+              {
+                filename: req.file.originalname,
+                content: req.file.buffer,
+                contentType: req.file.mimetype,
+              },
+            ]
+          : [],
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res.status(200).json({
+        message: "Mail sent successfully",
+      });
+    } catch (error) {
+      console.error("Mail send error:", error);
+      res.status(500).json({
+        error: "Failed to send mail",
+      });
+    }
   }
+);
+
+/* -------------------- HEALTH CHECK -------------------- */
+
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({ status: "OK" });
 });
 
-export default router;
+/* -------------------- SERVER START -------------------- */
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
 ```
 
 ---
