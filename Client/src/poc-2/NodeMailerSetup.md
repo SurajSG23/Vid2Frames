@@ -187,3 +187,374 @@ OUTLOOK_PASSWORD=your_app_password
 * Recipient inboxes (Gmail, Outlook, etc.)
 
 ---
+
+Code:
+
+```ts
+const [selectedFile, setSelectedFile] = useState<File | null>(null);
+```
+
+```ts
+const generateWord = async (type: string = "docx") => {
+  try {
+    const doc = await VariantWordDoc([
+      variantDataFromReducer,
+      variantData,
+      hashedTargetValue,
+      dataElastic,
+    ]);
+
+    const blob = await Packer.toBlob(doc);
+
+    // Convert Blob → File
+    const file = new File(
+      [blob],
+      `${variantDataFromReducer.name}.docx`,
+      {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }
+    );
+
+    setSelectedFile(file);
+
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "SUCCESS",
+        msg: "Word generated and ready to send via email!",
+        timeout: 3000,
+      },
+    });
+
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+
+  } catch (ex: any) {
+    console.error(ex);
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "ERROR",
+        msg: "Unable to generate document",
+        timeout: 3000,
+      },
+    });
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+  }
+};
+```
+
+```ts
+const generatePPT = async () => {
+  try {
+    const pptx = new PptxGenJS();
+
+    let options: any = {
+      day: "2-digit",
+      month: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      weekday: "long",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    };
+
+    const date_created = new Date(variantData.count.created_on);
+    const date_last_run_on = new Date(variantData.count.last_run_on);
+    const formatter = new Intl.DateTimeFormat([], options);
+
+    const processDataOfVariant: any = await ProcessService.get(
+      variantData.processId
+    );
+
+    const data = {
+      processDetails: {
+        name: processDataOfVariant.data.data.name,
+        description: processDataOfVariant.data.data.description,
+      },
+      variantDetails: {
+        name: variantDataFromReducer.name,
+        createdOn: formatting_datetime(formatter.format(date_created)),
+        lastRunOn: formatting_datetime(formatter.format(date_last_run_on)),
+        maxTime: epochToHHMMSS(variantData.count.max_time),
+        minTime: epochToHHMMSS(variantData.count.min_time),
+        avgTime: epochToHHMMSS(variantData.count.avg_time),
+        noOfRuns: epochSingleToDouble(variantData.count.no_of_runs),
+        appsInvolved: variantData.apps,
+        coverage: variantData.coverage,
+        steps: variantData.stepData,
+        exported_by: "Process Analyst",
+      },
+    };
+
+    const elasticData = dataElastic.current;
+    const stepScreenshots: any[] = [];
+
+    elasticData.data.elasticsearchFieldsData.forEach((item: any) => {
+      stepScreenshots.push(item._source.screenshot);
+    });
+
+
+    const titleSlide = pptx.addSlide({});
+    titleSlide.addImage({
+      data: pptxData.images[0].base64,
+      x: 3.8,
+      y: 0,
+      w: 2,
+      h: 1,
+    });
+    titleSlide.addImage({
+      data: pptxData.images[1].base64,
+      x: 3.3,
+      y: 1,
+      w: 3,
+      h: 3,
+    });
+    titleSlide.addText("DataFlow Finder Report", {
+      x: 1,
+      y: 4.5,
+      fontSize: 30,
+      color: "0d8390",
+      align: "center",
+    });
+
+  
+
+    const finalSlide = pptx.addSlide({});
+    finalSlide.addImage({
+      data: pptxData.images[0].base64,
+      x: 1,
+      y: 0,
+      w: 2,
+      h: 1,
+    });
+    finalSlide.addText(pptxData.paragraph, { x: 1, y: 3, fontSize: 10 });
+
+
+    // Generate PPT in memory
+    const pptBlob = await pptx.write("blob");
+
+    // Convert Blob → File
+    const pptFile = new File(
+      [pptBlob],
+      `${variantDataFromReducer.name}.pptx`,
+      {
+        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      }
+    );
+
+    // Store for email attachment
+    setSelectedFile(pptFile);
+
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "SUCCESS",
+        msg: "PPT generated and ready to send via email!",
+        timeout: 3000,
+      },
+    });
+
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+  } catch (err: any) {
+    console.error(err);
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "ERROR",
+        msg: "Unable to generate PPT",
+        timeout: 3000,
+      },
+    });
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+  }
+};
+```
+
+```ts
+const generateExcel = async (type: string = "excel") => {
+  try {
+    const parsedData =
+      variantViewerSource === "processes"
+        ? variantDataFromReducer
+        : JSON.parse(variantDataFromReducer.data);
+
+    const elasticData = dataElastic.current;
+    const timeStampMap: any = {};
+
+    elasticData.data.elasticsearchFieldsData.forEach((item: any) => {
+      timeStampMap[item._source.timestamp] = {
+        description: item._source.description,
+        screenshot: item._source.screenshot,
+      };
+    });
+
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "Loading..." });
+
+    const processDataOfVariant: any = await ProcessService.get(
+      variantData.processId
+    );
+
+    const workbook = new Excel.Workbook();
+    const metaSheet = workbook.addWorksheet("Variant Metadata");
+
+    const epochToHHMMSS = (timems: number): string => {
+      const sec_num = Math.floor(timems / 1000);
+      let hours: number | string = Math.floor(sec_num / 3600);
+      let minutes: number | string = Math.floor((sec_num - +hours * 3600) / 60);
+      let seconds: number | string = sec_num - +hours * 3600 - +minutes * 60;
+
+      if (hours < 10) hours = "0" + hours;
+      if (minutes < 10) minutes = "0" + minutes;
+      if (seconds < 10) seconds = "0" + seconds;
+
+      return `${hours}:${minutes}:${seconds}`;
+    };
+
+    const singleToDouble = (runs: number): number | string =>
+      runs < 10 ? "0" + runs : runs;
+
+    const apptypes: any[] = [];
+
+    Object.entries(parsedData.stepData).forEach(([_, nodeData]: any) => {
+      const appType =
+        hashedTargetValue.current[nodeData.screenshot]?._source?.appType ||
+        hashedTargetValue.current[nodeData.screenshot]?._source?.apptype;
+
+      if (appType && !apptypes.includes(appType)) apptypes.push(appType);
+    });
+
+    const apps = apptypes.join();
+
+    const arrData = [
+      { varDet: "Process name", varVal: processDataOfVariant.data.data.name },
+      {
+        varDet: "Process description",
+        varVal: processDataOfVariant.data.data.description,
+      },
+      { varDet: "Variant Name", varVal: variantDataFromReducer.name },
+      { varDet: "Apps involved", varVal: apps },
+      {
+        varDet: "Variant Created On",
+        varVal: new Date(parsedData.count.created_on).toString().slice(0, -34),
+      },
+      { varDet: "Variant Max time", varVal: epochToHHMMSS(parsedData.count.max_time) },
+      { varDet: "Variant Average Time", varVal: epochToHHMMSS(parsedData.count.avg_time) },
+      { varDet: "Variant Coverage", varVal: parsedData.count.coverage },
+      {
+        varDet: "Variant Last run on",
+        varVal: new Date(parsedData.count.last_run_on).toString().slice(0, -34),
+      },
+      {
+        varDet: "Variant Number of runs",
+        varVal: singleToDouble(parsedData.count.no_of_runs),
+      },
+      { varDet: "Variant Min time", varVal: epochToHHMMSS(parsedData.count.min_time) },
+    ];
+
+    arrData.forEach((item, index) => {
+      metaSheet.addRow([item.varDet, item.varVal]);
+      metaSheet.getCell(`A${index + 1}`).font = { bold: true };
+    });
+
+    metaSheet.properties.defaultColWidth = 40;
+
+    // Generate Excel in memory
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Convert to File (NO DOWNLOAD)
+    const excelFile = new File(
+      [buffer],
+      `${variantDataFromReducer.name}.xlsx`,
+      {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }
+    );
+
+    // Store for email attachment
+    setSelectedFile(excelFile);
+
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "SUCCESS",
+        msg: "Excel generated and ready to send via email!",
+        timeout: 3000,
+      },
+    });
+
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+
+  } catch (ex: any) {
+    console.error(ex);
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "ERROR",
+        msg: "Unable to generate Excel",
+        timeout: 3000,
+      },
+    });
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+  }
+};
+
+```
+
+```ts
+const generateDocument = async (type: string = "pdf") => {
+  try {
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "Loading..." });
+
+    const response: any = await ProcessService.get(
+      variantData.processId,
+      {
+        generateDocument: true,
+        documentType: type,
+        repositoryId: variantDataFromReducer.id,
+      },
+      { responseType: "blob" }
+    );
+
+    // Backend already returns a Blob
+    const pdfBlob = response.data;
+
+    // Convert Blob → File (NO DOWNLOAD)
+    const pdfFile = new File(
+      [pdfBlob],
+      `${variantDataFromReducer.name}.pdf`,
+      {
+        type: "application/pdf",
+      }
+    );
+
+    // Store for email attachment
+    setSelectedFile(pdfFile);
+
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "SUCCESS",
+        msg: "PDF generated and ready to send via email!",
+        timeout: 3000,
+      },
+    });
+
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+
+  } catch (ex: any) {
+    console.error(ex);
+    dispatch({
+      type: CALL_NOTIFY,
+      payload: {
+        type: "ERROR",
+        msg: "Unable to generate PDF",
+        timeout: 3000,
+      },
+    });
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+  }
+};
+
+```
