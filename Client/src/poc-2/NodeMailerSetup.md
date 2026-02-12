@@ -2,26 +2,26 @@
 
 **Frontend**
 
-* Collect:
+- Collect:
+  - `to[]`
+  - `cc[]`
+  - `subject`
+  - `body`
+  - `file`
 
-  * `to[]`
-  * `cc[]`
-  * `subject`
-  * `body`
-  * `file`
-* Send all of this to backend as **multipart/form-data**
+- Send all of this to backend as **multipart/form-data**
 
 **Backend**
 
-* Receive data + file
-* Configure **Nodemailer with Outlook SMTP**
-* Attach file
-* Send mail → Outlook delivers it
+- Receive data + file
+- Configure **Nodemailer with Outlook SMTP**
+- Attach file
+- Send mail → Outlook delivers it
 
 📌 Important:
 
 > Outlook is NOT opened on the client.
-> The mail is sent *from backend* using Outlook SMTP.
+> The mail is sent _from backend_ using Outlook SMTP.
 
 ---
 
@@ -48,15 +48,15 @@ const sendMail = async () => {
   formData.append("file", selectedFile); // File object
 
   await axios.post("http://localhost:5000/send-mail", formData, {
-    headers: { "Content-Type": "multipart/form-data" }
+    headers: { "Content-Type": "multipart/form-data" },
   });
 };
 ```
 
 📌 Notes:
 
-* `selectedFile` comes from `<input type="file" />`
-* Multiple file types supported automatically
+- `selectedFile` comes from `<input type="file" />`
+- Multiple file types supported automatically
 
 ---
 
@@ -80,7 +80,7 @@ import multer from "multer";
 
 export const upload = multer({
   storage: multer.memoryStorage(), // keeps file in memory
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 ```
 
@@ -99,8 +99,8 @@ export const transporter = nodemailer.createTransport({
   secure: false,
   auth: {
     user: process.env.OUTLOOK_EMAIL,
-    pass: process.env.OUTLOOK_PASSWORD
-  }
+    pass: process.env.OUTLOOK_PASSWORD,
+  },
 });
 ```
 
@@ -174,7 +174,7 @@ app.post(
         error: "Failed to send mail",
       });
     }
-  }
+  },
 );
 
 /* -------------------- HEALTH CHECK -------------------- */
@@ -188,7 +188,6 @@ app.get("/health", (_req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
 ```
 
 ---
@@ -197,10 +196,10 @@ app.listen(PORT, () => {
 
 No extra config needed for:
 
-* ✅ PDF
-* ✅ PPT / PPTX
-* ✅ DOC / DOCX
-* ✅ Images
+- ✅ PDF
+- ✅ PPT / PPTX
+- ✅ DOC / DOCX
+- ✅ Images
 
 Multer + Nodemailer handle MIME types automatically.
 
@@ -219,13 +218,13 @@ OUTLOOK_PASSWORD=your_app_password
 
 ### ❌ This does NOT open Outlook UI
 
-* Outlook UI cannot be opened from backend
-* This **sends mail via Outlook servers**
+- Outlook UI cannot be opened from backend
+- This **sends mail via Outlook servers**
 
 ### ✅ Email WILL appear in:
 
-* Sent Items of that Outlook account
-* Recipient inboxes (Gmail, Outlook, etc.)
+- Sent Items of that Outlook account
+- Recipient inboxes (Gmail, Outlook, etc.)
 
 ---
 
@@ -236,8 +235,11 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
 ```
 
 ```ts
-const generateWord = async (type: string = "docx") => {
+const generateWord = async () => {
   try {
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "Loading..." });
+
+    // 🔥 Always fully await document creation
     const doc = await VariantWordDoc([
       variantDataFromReducer,
       variantData,
@@ -245,40 +247,57 @@ const generateWord = async (type: string = "docx") => {
       dataElastic,
     ]);
 
-    const blob = await Packer.toBlob(doc);
+    if (!doc) {
+      throw new Error("Document generation failed");
+    }
 
-    // Convert Blob → File
-    const file = new File(
-      [blob],
-      `${variantDataFromReducer.name}.docx`,
-      {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      }
-    );
+    // 🔥 Properly generate buffer
+    const buffer = await Packer.toBuffer(doc);
 
-    setSelectedFile(file);
+    // 🔥 Convert to Blob
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    // 🔥 Convert to File (for email)
+    const wordFile = new File([blob], `${variantDataFromReducer.name}.docx`, {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    // 🔥 Store for attachment
+    setSelectedFile(wordFile);
+
+    // OPTIONAL — enable download if needed
+    // const url = window.URL.createObjectURL(blob);
+    // const link = document.createElement("a");
+    // link.href = url;
+    // link.download = `${variantDataFromReducer.name}.docx`;
+    // document.body.appendChild(link);
+    // link.click();
+    // window.URL.revokeObjectURL(url);
 
     dispatch({
       type: CALL_NOTIFY,
       payload: {
         type: "SUCCESS",
-        msg: "Word generated and ready to send via email!",
+        msg: "Word document generated successfully!",
         timeout: 3000,
       },
     });
 
     dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
+  } catch (error: any) {
+    console.error("Word generation error:", error);
 
-  } catch (ex: any) {
-    console.error(ex);
     dispatch({
       type: CALL_NOTIFY,
       payload: {
         type: "ERROR",
-        msg: "Unable to generate document",
+        msg: "Unable to generate Word document",
         timeout: 3000,
       },
     });
+
     dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
   }
 };
@@ -306,7 +325,7 @@ const generatePPT = async () => {
     const formatter = new Intl.DateTimeFormat([], options);
 
     const processDataOfVariant: any = await ProcessService.get(
-      variantData.processId
+      variantData.processId,
     );
 
     const data = {
@@ -336,7 +355,6 @@ const generatePPT = async () => {
       stepScreenshots.push(item._source.screenshot);
     });
 
-
     const titleSlide = pptx.addSlide({});
     titleSlide.addImage({
       data: pptxData.images[0].base64,
@@ -360,8 +378,6 @@ const generatePPT = async () => {
       align: "center",
     });
 
-  
-
     const finalSlide = pptx.addSlide({});
     finalSlide.addImage({
       data: pptxData.images[0].base64,
@@ -372,18 +388,13 @@ const generatePPT = async () => {
     });
     finalSlide.addText(pptxData.paragraph, { x: 1, y: 3, fontSize: 10 });
 
-
     // Generate PPT in memory
     const pptBlob = await pptx.write("blob");
 
     // Convert Blob → File
-    const pptFile = new File(
-      [pptBlob],
-      `${variantDataFromReducer.name}.pptx`,
-      {
-        type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      }
-    );
+    const pptFile = new File([pptBlob], `${variantDataFromReducer.name}.pptx`, {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
 
     // Store for email attachment
     setSelectedFile(pptFile);
@@ -414,8 +425,10 @@ const generatePPT = async () => {
 ```
 
 ```ts
-const generateExcel = async (type: string = "excel") => {
+const generateExcel = async () => {
   try {
+    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "Loading..." });
+
     const parsedData =
       variantViewerSource === "processes"
         ? variantDataFromReducer
@@ -431,116 +444,198 @@ const generateExcel = async (type: string = "excel") => {
       };
     });
 
-    dispatch({ type: SHOWSCREENBLOCKMSG, payload: "Loading..." });
-
     const processDataOfVariant: any = await ProcessService.get(
-      variantData.processId
+      variantData.processId,
     );
 
     const workbook = new Excel.Workbook();
+
+    /* ============================================================
+       1️⃣ METADATA SHEET
+    ============================================================ */
+
     const metaSheet = workbook.addWorksheet("Variant Metadata");
 
     const epochToHHMMSS = (timems: number): string => {
-      const sec_num = Math.floor(timems / 1000);
-      let hours: number | string = Math.floor(sec_num / 3600);
-      let minutes: number | string = Math.floor((sec_num - +hours * 3600) / 60);
-      let seconds: number | string = sec_num - +hours * 3600 - +minutes * 60;
-
-      if (hours < 10) hours = "0" + hours;
-      if (minutes < 10) minutes = "0" + minutes;
-      if (seconds < 10) seconds = "0" + seconds;
-
-      return `${hours}:${minutes}:${seconds}`;
+      const sec = Math.floor(timems / 1000);
+      const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+      const s = String(sec % 60).padStart(2, "0");
+      return `${h}:${m}:${s}`;
     };
 
-    const singleToDouble = (runs: number): number | string =>
-      runs < 10 ? "0" + runs : runs;
+    const singleToDouble = (runs: number): string =>
+      String(runs).padStart(2, "0");
 
-    const apptypes: any[] = [];
+    const apptypes: string[] = [];
 
     Object.entries(parsedData.stepData).forEach(([_, nodeData]: any) => {
-      const appType =
-        hashedTargetValue.current[nodeData.screenshot]?._source?.appType ||
+      const app1 =
+        hashedTargetValue.current[nodeData.screenshot]?._source?.appType;
+      const app2 =
         hashedTargetValue.current[nodeData.screenshot]?._source?.apptype;
 
-      if (appType && !apptypes.includes(appType)) apptypes.push(appType);
+      if (app1 && !apptypes.includes(app1)) apptypes.push(app1);
+      if (app2 && !apptypes.includes(app2)) apptypes.push(app2);
     });
 
-    const apps = apptypes.join();
-
     const arrData = [
-      { varDet: "Process name", varVal: processDataOfVariant.data.data.name },
-      {
-        varDet: "Process description",
-        varVal: processDataOfVariant.data.data.description,
-      },
-      { varDet: "Variant Name", varVal: variantDataFromReducer.name },
-      { varDet: "Apps involved", varVal: apps },
-      {
-        varDet: "Variant Created On",
-        varVal: new Date(parsedData.count.created_on).toString().slice(0, -34),
-      },
-      { varDet: "Variant Max time", varVal: epochToHHMMSS(parsedData.count.max_time) },
-      { varDet: "Variant Average Time", varVal: epochToHHMMSS(parsedData.count.avg_time) },
-      { varDet: "Variant Coverage", varVal: parsedData.count.coverage },
-      {
-        varDet: "Variant Last run on",
-        varVal: new Date(parsedData.count.last_run_on).toString().slice(0, -34),
-      },
-      {
-        varDet: "Variant Number of runs",
-        varVal: singleToDouble(parsedData.count.no_of_runs),
-      },
-      { varDet: "Variant Min time", varVal: epochToHHMMSS(parsedData.count.min_time) },
+      ["Process name", processDataOfVariant.data.data.name],
+      ["Process description", processDataOfVariant.data.data.description],
+      ["Variant Name", variantDataFromReducer.name],
+      ["Apps involved", apptypes.join()],
+      [
+        "Variant Created On",
+        new Date(parsedData.count.created_on).toString().slice(0, -34),
+      ],
+      ["Variant Max time", epochToHHMMSS(parsedData.count.max_time)],
+      ["Variant Average Time", epochToHHMMSS(parsedData.count.avg_time)],
+      ["Variant Coverage", parsedData.count.coverage],
+      [
+        "Variant Last run on",
+        new Date(parsedData.count.last_run_on).toString().slice(0, -34),
+      ],
+      ["Variant Number of runs", singleToDouble(parsedData.count.no_of_runs)],
+      ["Variant Min time", epochToHHMMSS(parsedData.count.min_time)],
     ];
 
-    arrData.forEach((item, index) => {
-      metaSheet.addRow([item.varDet, item.varVal]);
+    arrData.forEach((row, index) => {
+      metaSheet.addRow(row);
       metaSheet.getCell(`A${index + 1}`).font = { bold: true };
     });
 
-    metaSheet.properties.defaultColWidth = 40;
+    metaSheet.columns = [{ width: 40 }, { width: 50 }];
 
-    // Generate Excel in memory
+    /* ============================================================
+       2️⃣ STEPS SHEET
+    ============================================================ */
+
+    const stepSheet = workbook.addWorksheet("Steps", {
+      views: [{ state: "frozen", ySplit: 1 }],
+    });
+
+    if (variantDataFromReducer.type === "variant") {
+      stepSheet.columns = [
+        { header: "Step no", width: 10 },
+        { header: "Description", width: 30 },
+        { header: "Image", width: 65 },
+        { header: "Xpath", width: 30 },
+        { header: "Timestamp", width: 50 },
+        { header: "URL", width: 50 },
+      ];
+    } else {
+      stepSheet.columns = [
+        { header: "Step no", width: 10 },
+        { header: "Detailed description", width: 30 },
+        { header: "Translated description", width: 30 },
+        { header: "Image", width: 65 },
+        { header: "Xpath", width: 30 },
+        { header: "Timestamp", width: 50 },
+        { header: "URL", width: 50 },
+      ];
+    }
+
+    stepSheet.getRow(1).font = { bold: true };
+
+    Object.entries(parsedData.stepData).forEach(
+      ([_, nodeData]: any, idx: number) => {
+        const rawUrl = parsedData.nodes[nodeData.screenshot]?.url;
+        const parsedUrl =
+          typeof rawUrl === "string" ? JSON.parse(rawUrl) : rawUrl;
+
+        const url =
+          parsedUrl?.[0] &&
+          !["SAP", "EXCEL", "OUTLOOK"].includes(
+            parsedData.nodes[nodeData.screenshot]?.apptype,
+          )
+            ? parsedUrl[0]
+            : "";
+
+        if (variantDataFromReducer.type === "variant") {
+          stepSheet.addRow([
+            singleToDouble(idx + 1),
+            nodeData["description"],
+            "",
+            parsedData.nodes[nodeData.screenshot].apptype === "SAP"
+              ? parsedData.nodes[nodeData.screenshot].xpath
+              : "",
+            new Date(
+              parsedData.nodes[nodeData.screenshot].timestamp,
+            ).toString(),
+            url,
+          ]);
+        } else {
+          stepSheet.addRow([
+            singleToDouble(idx + 1),
+            nodeData["description"],
+            nodeData["translatedDescription"],
+            "",
+            parsedData.nodes[nodeData.screenshot].apptype === "SAP"
+              ? parsedData.nodes[nodeData.screenshot].xpath
+              : "",
+            new Date(
+              parsedData.nodes[nodeData.screenshot].timestamp,
+            ).toString(),
+            url,
+          ]);
+        }
+
+        const imageId = workbook.addImage({
+          base64: timeStampMap[nodeData.timestamp].screenshot,
+          extension: "png",
+        });
+
+        stepSheet.getRow(idx + 2).height = 200;
+
+        stepSheet.addImage(imageId, {
+          tl: {
+            col: variantDataFromReducer.type === "variant" ? 2.2 : 3.2,
+            row: idx + 1.04,
+          },
+          ext: { width: 450, height: 250 },
+        });
+      },
+    );
+
+    /* ============================================================
+       3️⃣ FINALIZE FILE (NO DOWNLOAD)
+    ============================================================ */
+
     const buffer = await workbook.xlsx.writeBuffer();
 
-    // Convert to File (NO DOWNLOAD)
     const excelFile = new File(
       [buffer],
       `${variantDataFromReducer.name}.xlsx`,
       {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }
+      },
     );
 
-    // Store for email attachment
     setSelectedFile(excelFile);
 
     dispatch({
       type: CALL_NOTIFY,
       payload: {
         type: "SUCCESS",
-        msg: "Excel generated and ready to send via email!",
+        msg: "Excel generated and ready for email!",
         timeout: 3000,
       },
     });
 
     dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
-
   } catch (ex: any) {
     console.error(ex);
     dispatch({
       type: CALL_NOTIFY,
       payload: {
         type: "ERROR",
-        msg: "Unable to generate Excel",
+        msg: "Excel generation failed",
         timeout: 3000,
       },
     });
     dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
   }
 };
-
 ```
 
 ```ts
@@ -555,20 +650,16 @@ const generateDocument = async (type: string = "pdf") => {
         documentType: type,
         repositoryId: variantDataFromReducer.id,
       },
-      { responseType: "blob" }
+      { responseType: "blob" },
     );
 
     // Backend already returns a Blob
     const pdfBlob = response.data;
 
     // Convert Blob → File (NO DOWNLOAD)
-    const pdfFile = new File(
-      [pdfBlob],
-      `${variantDataFromReducer.name}.pdf`,
-      {
-        type: "application/pdf",
-      }
-    );
+    const pdfFile = new File([pdfBlob], `${variantDataFromReducer.name}.pdf`, {
+      type: "application/pdf",
+    });
 
     // Store for email attachment
     setSelectedFile(pdfFile);
@@ -583,7 +674,6 @@ const generateDocument = async (type: string = "pdf") => {
     });
 
     dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
-
   } catch (ex: any) {
     console.error(ex);
     dispatch({
@@ -597,5 +687,50 @@ const generateDocument = async (type: string = "pdf") => {
     dispatch({ type: SHOWSCREENBLOCKMSG, payload: "" });
   }
 };
+```
 
+```jsx
+
+ const addSubject = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && subjectInput.trim()) {
+      e.preventDefault();
+      setSubjects([...subjects, subjectInput.trim()]);
+      setSubjectInput("");
+    }
+  };
+
+  const removeSubject = (index: number) => {
+    setSubjects(subjects.filter((_, i) => i !== index));
+  };
+
+<div className="pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus-within:border-purple-500/50 focus-within:bg-white/10 transition-all duration-300">
+  {subjects.length > 0 && (
+    <div className="flex flex-wrap gap-2 mb-2">
+      {subjects.map((subj, index) => (
+        <span
+          key={index}
+          className="flex items-center gap-2 px-3 py-1 text-sm bg-purple-600/30 rounded-full text-white"
+        >
+          {subj}
+          <button
+            type="button"
+            onClick={() => removeSubject(index)}
+            className="text-white/60 hover:text-white cursor-pointer hover:scale-120 duration-110"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+  )}
+
+  <input
+    type="text"
+    placeholder="Type subject you handle and press Enter"
+    value={subjectInput}
+    onChange={(e) => setSubjectInput(e.target.value)}
+    onKeyDown={addSubject}
+    className="w-full bg-transparent outline-none text-white placeholder:text-white/40"
+  />
+</div>
 ```
